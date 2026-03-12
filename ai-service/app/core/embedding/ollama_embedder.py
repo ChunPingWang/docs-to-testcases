@@ -1,11 +1,12 @@
 import httpx
 
 from app.config import settings
+from app.core.runtime_settings import runtime_settings
 
 
 async def embed_texts(texts: list[str], model: str | None = None) -> list[list[float]]:
     """Generate embeddings for a list of texts using Ollama."""
-    model = model or settings.embedding_model
+    model = model or runtime_settings.embedding_model
     embeddings = []
 
     async with httpx.AsyncClient(timeout=60.0) as client:

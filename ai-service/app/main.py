@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.routes import documents, qa, generation, finetune, health
+from app.api.routes import documents, qa, generation, finetune, health, settings
 
 app = FastAPI(
     title="Docs-to-TestCases AI Service",
@@ -23,3 +23,4 @@ app.include_router(documents.router, prefix="/ai/documents", tags=["documents"])
 app.include_router(qa.router, prefix="/ai/qa", tags=["qa"])
 app.include_router(generation.router, prefix="/ai/generate", tags=["generation"])
 app.include_router(finetune.router, prefix="/ai/finetune", tags=["finetune"])
+app.include_router(settings.router, prefix="/ai/settings", tags=["settings"])

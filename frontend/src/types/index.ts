@@ -67,3 +67,26 @@ export interface QaMessage {
     relevance_score: number;
   }>;
 }
+
+export interface ModelSettings {
+  llm_model: string;
+  embedding_model: string;
+  temperature_qa: number;
+  temperature_test_case: number;
+  temperature_test_code: number;
+  temperature_finetune: number;
+  max_tokens_qa: number;
+  max_tokens_test_case: number;
+  max_tokens_test_code: number;
+  max_tokens_finetune: number;
+  chunk_size: number;
+  chunk_overlap: number;
+  retrieval_top_k: number;
+}
+
+export interface HealthStatus {
+  status: string;
+  ollama_connected: boolean;
+  chroma_connected: boolean;
+  models_available: string[];
+}

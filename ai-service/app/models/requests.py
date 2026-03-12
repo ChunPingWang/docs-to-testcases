@@ -38,3 +38,19 @@ class PrepareFinetuneRequest(BaseModel):
 class StartFinetuneRequest(BaseModel):
     project_id: str
     config: dict = {}
+
+
+class UpdateSettingsRequest(BaseModel):
+    llm_model: str | None = None
+    embedding_model: str | None = None
+    temperature_qa: float | None = None
+    temperature_test_case: float | None = None
+    temperature_test_code: float | None = None
+    temperature_finetune: float | None = None
+    max_tokens_qa: int | None = None
+    max_tokens_test_case: int | None = None
+    max_tokens_test_code: int | None = None
+    max_tokens_finetune: int | None = None
+    chunk_size: int | None = None
+    chunk_overlap: int | None = None
+    retrieval_top_k: int | None = None

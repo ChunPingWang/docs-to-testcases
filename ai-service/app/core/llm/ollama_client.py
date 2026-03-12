@@ -3,6 +3,7 @@ from collections.abc import AsyncGenerator
 import httpx
 
 from app.config import settings
+from app.core.runtime_settings import runtime_settings
 
 
 async def generate(
@@ -13,7 +14,7 @@ async def generate(
     max_tokens: int = 4096,
 ) -> str:
     """Generate a response from Ollama (non-streaming)."""
-    model = model or settings.llm_model
+    model = model or runtime_settings.llm_model
 
     payload = {
         "model": model,
@@ -43,7 +44,7 @@ async def generate_stream(
     max_tokens: int = 4096,
 ) -> AsyncGenerator[str, None]:
     """Generate a streaming response from Ollama."""
-    model = model or settings.llm_model
+    model = model or runtime_settings.llm_model
 
     payload = {
         "model": model,
@@ -81,7 +82,7 @@ async def chat(
     max_tokens: int = 4096,
 ) -> str:
     """Chat completion using Ollama chat API."""
-    model = model or settings.llm_model
+    model = model or runtime_settings.llm_model
 
     payload = {
         "model": model,

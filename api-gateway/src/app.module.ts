@@ -7,6 +7,7 @@ import { DocumentsModule } from './modules/documents/documents.module';
 import { FeaturesModule } from './modules/features/features.module';
 import { QaModule } from './modules/qa/qa.module';
 import { FinetuneModule } from './modules/finetune/finetune.module';
+import { SettingsModule } from './modules/settings/settings.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { FinetuneModule } from './modules/finetune/finetune.module';
     FeaturesModule,
     QaModule,
     FinetuneModule,
+    SettingsModule,
   ],
 })
 export class AppModule {}

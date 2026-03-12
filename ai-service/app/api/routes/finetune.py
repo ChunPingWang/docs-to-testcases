@@ -5,6 +5,7 @@ from pathlib import Path
 from fastapi import APIRouter, HTTPException
 
 from app.config import settings
+from app.core.runtime_settings import runtime_settings
 from app.models.requests import PrepareFinetuneRequest, StartFinetuneRequest
 from app.core.vectorstore.chroma_store import get_collection
 from app.core.llm.ollama_client import generate
@@ -46,8 +47,8 @@ async def prepare_training_data(req: PrepareFinetuneRequest):
                 qa_response = await generate(
                     prompt=QA_PAIR_PROMPT.format(content=doc_text[:2000]),
                     system=TRAINING_DATA_SYSTEM,
-                    temperature=0.5,
-                    max_tokens=2048,
+                    temperature=runtime_settings.temperature_finetune,
+                    max_tokens=runtime_settings.max_tokens_finetune,
                 )
                 pairs = json.loads(qa_response)
                 if isinstance(pairs, list):
@@ -60,8 +61,8 @@ async def prepare_training_data(req: PrepareFinetuneRequest):
                 gherkin_response = await generate(
                     prompt=GHERKIN_PAIR_PROMPT.format(content=doc_text[:2000]),
                     system=TRAINING_DATA_SYSTEM,
-                    temperature=0.5,
-                    max_tokens=2048,
+                    temperature=runtime_settings.temperature_finetune,
+                    max_tokens=runtime_settings.max_tokens_finetune,
                 )
                 pair = json.loads(gherkin_response)
                 if isinstance(pair, dict):

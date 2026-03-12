@@ -17,6 +17,7 @@ from app.core.llm.prompts.test_case_generation import (
 )
 from app.core.llm.prompts.test_code_generation import build_code_generation_prompt
 from app.utils.gherkin_validator import validate_gherkin, extract_feature_name, split_features
+from app.core.runtime_settings import runtime_settings
 
 router = APIRouter()
 
@@ -57,8 +58,8 @@ async def generate_test_cases(req: GenerateTestCasesRequest):
         raw_output = await generate(
             prompt=prompt,
             system=TC_SYSTEM,
-            temperature=0.3,
-            max_tokens=8192,
+            temperature=runtime_settings.temperature_test_case,
+            max_tokens=runtime_settings.max_tokens_test_case,
         )
 
         # Split into individual features
@@ -126,8 +127,8 @@ async def generate_test_code(req: GenerateTestCodeRequest):
     raw_output = await generate(
         prompt=user_prompt,
         system=system_prompt,
-        temperature=0.2,
-        max_tokens=8192,
+        temperature=runtime_settings.temperature_test_code,
+        max_tokens=runtime_settings.max_tokens_test_code,
     )
 
     # Parse output into files

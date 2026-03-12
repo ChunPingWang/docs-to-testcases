@@ -39,3 +39,19 @@ class HealthResponse(BaseModel):
     ollama_connected: bool
     chroma_connected: bool
     models_available: list[str]
+
+
+class SettingsResponse(BaseModel):
+    llm_model: str
+    embedding_model: str
+    temperature_qa: float
+    temperature_test_case: float
+    temperature_test_code: float
+    temperature_finetune: float
+    max_tokens_qa: int
+    max_tokens_test_case: int
+    max_tokens_test_code: int
+    max_tokens_finetune: int
+    chunk_size: int
+    chunk_overlap: int
+    retrieval_top_k: int

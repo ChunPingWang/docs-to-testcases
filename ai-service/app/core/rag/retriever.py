@@ -1,14 +1,16 @@
 from app.core.embedding.ollama_embedder import embed_single
 from app.core.vectorstore.chroma_store import query_chunks
+from app.core.runtime_settings import runtime_settings
 
 
 async def retrieve_context(
     project_id: str,
     query: str,
-    top_k: int = 10,
+    top_k: int = 0,
     document_id: str | None = None,
 ) -> list[dict]:
     """Retrieve relevant document chunks for a query using RAG."""
+    top_k = top_k or runtime_settings.retrieval_top_k
     query_embedding = await embed_single(query)
 
     where = None

@@ -1,12 +1,12 @@
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
-from app.config import settings
+from app.core.runtime_settings import runtime_settings
 
 
 def chunk_by_sections(sections: list[dict], chunk_size: int = 0, chunk_overlap: int = 0) -> list[dict]:
     """Chunk document sections. If a section is too large, split it further."""
-    cs = chunk_size or settings.chunk_size
-    co = chunk_overlap or settings.chunk_overlap
+    cs = chunk_size or runtime_settings.chunk_size
+    co = chunk_overlap or runtime_settings.chunk_overlap
 
     splitter = RecursiveCharacterTextSplitter(
         chunk_size=cs,
@@ -46,8 +46,8 @@ def chunk_by_sections(sections: list[dict], chunk_size: int = 0, chunk_overlap: 
 
 def chunk_general(text: str, chunk_size: int = 0, chunk_overlap: int = 0) -> list[dict]:
     """General purpose chunking for plain text without sections."""
-    cs = chunk_size or settings.chunk_size
-    co = chunk_overlap or settings.chunk_overlap
+    cs = chunk_size or runtime_settings.chunk_size
+    co = chunk_overlap or runtime_settings.chunk_overlap
 
     splitter = RecursiveCharacterTextSplitter(
         chunk_size=cs,

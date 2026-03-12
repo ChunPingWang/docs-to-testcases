@@ -2,6 +2,7 @@ from collections.abc import AsyncGenerator
 
 from app.core.rag.retriever import retrieve_context, format_context
 from app.core.llm.ollama_client import generate, generate_stream
+from app.core.runtime_settings import runtime_settings
 
 
 QA_SYSTEM_PROMPT = """You are a knowledgeable assistant that answers questions about system design documents.
@@ -27,7 +28,13 @@ async def qa_answer(
     context = format_context(chunks)
 
     prompt = QA_PROMPT_TEMPLATE.format(context=context, question=question)
-    answer = await generate(prompt, system=QA_SYSTEM_PROMPT, model=model)
+    answer = await generate(
+        prompt,
+        system=QA_SYSTEM_PROMPT,
+        model=model,
+        temperature=runtime_settings.temperature_qa,
+        max_tokens=runtime_settings.max_tokens_qa,
+    )
 
     return {
         "answer": answer,
@@ -53,5 +60,11 @@ async def qa_answer_stream(
 
     prompt = QA_PROMPT_TEMPLATE.format(context=context, question=question)
 
-    async for token in generate_stream(prompt, system=QA_SYSTEM_PROMPT, model=model):
+    async for token in generate_stream(
+        prompt,
+        system=QA_SYSTEM_PROMPT,
+        model=model,
+        temperature=runtime_settings.temperature_qa,
+        max_tokens=runtime_settings.max_tokens_qa,
+    ):
         yield token

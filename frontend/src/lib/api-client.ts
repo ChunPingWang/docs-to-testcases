@@ -81,4 +81,12 @@ export const startFinetune = (projectId: string, config?: object) =>
 export const getFinetuneStatus = (jobId: string) =>
   api.get(`/finetune-jobs/${jobId}/status`).then((r) => r.data);
 
+// ── Settings ─────────────────────────────────────────
+export const getSettings = () => api.get('/settings').then((r) => r.data);
+export const updateSettings = (data: Record<string, unknown>) =>
+  api.put('/settings', data).then((r) => r.data);
+export const resetSettings = () => api.post('/settings/reset').then((r) => r.data);
+export const getHealthStatus = () => api.get('/settings/health').then((r) => r.data);
+export const getAvailableModels = () => api.get('/settings/models').then((r) => r.data);
+
 export default api;

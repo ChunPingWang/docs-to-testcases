@@ -83,4 +83,24 @@ export class AiServiceClient {
     const resp = await this.client.get('/ai/health');
     return resp.data;
   }
+
+  async getSettings() {
+    const resp = await this.client.get('/ai/settings');
+    return resp.data;
+  }
+
+  async updateSettings(data: Record<string, unknown>) {
+    const resp = await this.client.put('/ai/settings', data);
+    return resp.data;
+  }
+
+  async resetSettings() {
+    const resp = await this.client.post('/ai/settings/reset');
+    return resp.data;
+  }
+
+  async getModels() {
+    const resp = await this.client.get('/ai/models');
+    return resp.data;
+  }
 }
