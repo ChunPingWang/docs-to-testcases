@@ -86,7 +86,7 @@ export interface ModelSettings {
 
 export interface HealthStatus {
   status: string;
-  ollama_connected: boolean;
+  llm_api_connected: boolean;
   chroma_connected: boolean;
   models_available: string[];
 }

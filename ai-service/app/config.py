@@ -2,9 +2,10 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    ollama_base_url: str = "http://10.0.0.4:11434"
-    llm_model: str = "llama3.1:70b"
-    embedding_model: str = "nomic-embed-text"
+    llm_api_base_url: str = "https://api.minimax.io/v1"
+    llm_api_key: str = ""
+    llm_model: str = "MiniMax-M2.5"
+    embedding_model: str = "embo-01"
 
     chroma_host: str = "chromadb"
     chroma_port: int = 8000

@@ -127,8 +127,8 @@ export default function SettingsPage() {
         </div>
         <div className="flex items-center gap-2">
           {health && (
-            <Badge variant={health.ollama_connected ? 'default' : 'destructive'}>
-              Ollama: {health.ollama_connected ? 'Connected' : 'Disconnected'}
+            <Badge variant={health.llm_api_connected ? 'default' : 'destructive'}>
+              LLM API: {health.llm_api_connected ? 'Connected' : 'Disconnected'}
             </Badge>
           )}
           {health && (
@@ -169,7 +169,7 @@ export default function SettingsPage() {
                 {models.length > 0 ? (
                   <Select
                     value={settings.llm_model}
-                    onValueChange={(v) => update('llm_model', v)}
+                    onValueChange={(v) => v && update('llm_model', v)}
                   >
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="Select model" />
@@ -186,7 +186,7 @@ export default function SettingsPage() {
                   <Input
                     value={settings.llm_model}
                     onChange={(e) => update('llm_model', e.target.value)}
-                    placeholder="e.g. llama3.1:70b"
+                    placeholder="e.g. MiniMax-M2.5"
                   />
                 )}
                 <p className="text-xs text-muted-foreground mt-2">
@@ -203,7 +203,7 @@ export default function SettingsPage() {
                 {models.length > 0 ? (
                   <Select
                     value={settings.embedding_model}
-                    onValueChange={(v) => update('embedding_model', v)}
+                    onValueChange={(v) => v && update('embedding_model', v)}
                   >
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="Select model" />
@@ -220,7 +220,7 @@ export default function SettingsPage() {
                   <Input
                     value={settings.embedding_model}
                     onChange={(e) => update('embedding_model', e.target.value)}
-                    placeholder="e.g. nomic-embed-text"
+                    placeholder="e.g. embo-01"
                   />
                 )}
                 <p className="text-xs text-muted-foreground mt-2">

@@ -36,7 +36,7 @@ class GenerateTestCodeResponse(BaseModel):
 
 class HealthResponse(BaseModel):
     status: str
-    ollama_connected: bool
+    llm_api_connected: bool
     chroma_connected: bool
     models_available: list[str]
 

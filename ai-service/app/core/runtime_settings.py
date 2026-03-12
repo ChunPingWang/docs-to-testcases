@@ -38,8 +38,8 @@ class RuntimeSettings:
 
     def reset(self):
         """Reset every field to its default (from env / config.py)."""
-        self.llm_model: str = _static.llm_model
-        self.embedding_model: str = _static.embedding_model
+        self.llm_model: str = _static.llm_model  # e.g. MiniMax-M2.5
+        self.embedding_model: str = _static.embedding_model  # e.g. embo-01
 
         # Temperature defaults per operation type
         self.temperature_qa: float = 0.7

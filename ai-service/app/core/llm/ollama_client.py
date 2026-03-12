@@ -1,9 +1,25 @@
+import json
+import re
 from collections.abc import AsyncGenerator
 
 import httpx
 
 from app.config import settings
 from app.core.runtime_settings import runtime_settings
+
+_THINK_RE = re.compile(r"<think>.*?</think>\s*", re.DOTALL)
+
+
+def _strip_think(text: str) -> str:
+    """Strip <think>...</think> reasoning blocks from model output."""
+    return _THINK_RE.sub("", text).strip()
+
+
+def _headers() -> dict:
+    return {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {settings.llm_api_key}",
+    }
 
 
 async def generate(
@@ -13,27 +29,15 @@ async def generate(
     temperature: float = 0.7,
     max_tokens: int = 4096,
 ) -> str:
-    """Generate a response from Ollama (non-streaming)."""
+    """Generate a response using OpenAI-compatible chat API."""
     model = model or runtime_settings.llm_model
 
-    payload = {
-        "model": model,
-        "prompt": prompt,
-        "system": system,
-        "stream": False,
-        "options": {
-            "temperature": temperature,
-            "num_predict": max_tokens,
-        },
-    }
+    messages = []
+    if system:
+        messages.append({"role": "system", "content": system})
+    messages.append({"role": "user", "content": prompt})
 
-    async with httpx.AsyncClient(timeout=300.0) as client:
-        resp = await client.post(
-            f"{settings.ollama_base_url}/api/generate",
-            json=payload,
-        )
-        resp.raise_for_status()
-        return resp.json()["response"]
+    return await chat(messages, model=model, temperature=temperature, max_tokens=max_tokens)
 
 
 async def generate_stream(
@@ -43,36 +47,41 @@ async def generate_stream(
     temperature: float = 0.7,
     max_tokens: int = 4096,
 ) -> AsyncGenerator[str, None]:
-    """Generate a streaming response from Ollama."""
+    """Generate a streaming response using OpenAI-compatible chat API."""
     model = model or runtime_settings.llm_model
+
+    messages = []
+    if system:
+        messages.append({"role": "system", "content": system})
+    messages.append({"role": "user", "content": prompt})
 
     payload = {
         "model": model,
-        "prompt": prompt,
-        "system": system,
+        "messages": messages,
         "stream": True,
-        "options": {
-            "temperature": temperature,
-            "num_predict": max_tokens,
-        },
+        "temperature": temperature,
+        "max_tokens": max_tokens,
     }
 
     async with httpx.AsyncClient(timeout=300.0) as client:
         async with client.stream(
             "POST",
-            f"{settings.ollama_base_url}/api/generate",
+            f"{settings.llm_api_base_url}/chat/completions",
+            headers=_headers(),
             json=payload,
         ) as resp:
             resp.raise_for_status()
-            import json
-
             async for line in resp.aiter_lines():
-                if line:
-                    data = json.loads(line)
-                    if "response" in data:
-                        yield data["response"]
-                    if data.get("done", False):
+                if line.startswith("data: "):
+                    data_str = line[6:]
+                    if data_str.strip() == "[DONE]":
                         break
+                    data = json.loads(data_str)
+                    choices = data.get("choices", [])
+                    if choices:
+                        content = choices[0].get("delta", {}).get("content", "")
+                        if content:
+                            yield content
 
 
 async def chat(
@@ -81,23 +90,23 @@ async def chat(
     temperature: float = 0.7,
     max_tokens: int = 4096,
 ) -> str:
-    """Chat completion using Ollama chat API."""
+    """Chat completion using OpenAI-compatible API."""
     model = model or runtime_settings.llm_model
 
     payload = {
         "model": model,
         "messages": messages,
         "stream": False,
-        "options": {
-            "temperature": temperature,
-            "num_predict": max_tokens,
-        },
+        "temperature": temperature,
+        "max_tokens": max_tokens,
     }
 
     async with httpx.AsyncClient(timeout=300.0) as client:
         resp = await client.post(
-            f"{settings.ollama_base_url}/api/chat",
+            f"{settings.llm_api_base_url}/chat/completions",
+            headers=_headers(),
             json=payload,
         )
         resp.raise_for_status()
-        return resp.json()["message"]["content"]
+        content = resp.json()["choices"][0]["message"]["content"]
+        return _strip_think(content)
