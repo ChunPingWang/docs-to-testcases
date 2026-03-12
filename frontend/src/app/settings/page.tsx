@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import {
   Select,
   SelectContent,
@@ -36,6 +38,11 @@ const DEFAULT_SETTINGS: ModelSettings = {
   chunk_size: 1000,
   chunk_overlap: 200,
   retrieval_top_k: 10,
+  min_relevance_score: 0.3,
+  use_reranker: false,
+  reranker_initial_k: 30,
+  chunking_strategy: 'fixed',
+  semantic_chunk_threshold: 0.5,
 };
 
 export default function SettingsPage() {
@@ -107,7 +114,7 @@ export default function SettingsPage() {
     }
   };
 
-  const update = (key: keyof ModelSettings, value: string | number) => {
+  const update = (key: keyof ModelSettings, value: string | number | boolean) => {
     setSettings((prev) => ({ ...prev, [key]: value }));
   };
 
@@ -282,63 +289,184 @@ export default function SettingsPage() {
 
         {/* ── Tab 3: RAG Parameters ── */}
         <TabsContent value="rag">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+          <div className="space-y-4 mt-4">
+            {/* Row 1: Basic chunking settings */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm">Chunk Size</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Input
+                    type="number"
+                    min="100"
+                    max="10000"
+                    step="100"
+                    value={settings.chunk_size}
+                    onChange={(e) => updateNumber('chunk_size', e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Maximum characters per document chunk
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm">Chunk Overlap</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Input
+                    type="number"
+                    min="0"
+                    max="2000"
+                    step="50"
+                    value={settings.chunk_overlap}
+                    onChange={(e) => updateNumber('chunk_overlap', e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Overlap between consecutive chunks
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm">Retrieval Top K</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Input
+                    type="number"
+                    min="1"
+                    max="50"
+                    step="1"
+                    value={settings.retrieval_top_k}
+                    onChange={(e) => updateNumber('retrieval_top_k', e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Number of chunks retrieved for context
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Row 2: Relevance filtering */}
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm">Chunk Size</CardTitle>
+                <CardTitle className="text-sm">Min Relevance Score</CardTitle>
               </CardHeader>
               <CardContent>
-                <Input
-                  type="number"
-                  min="100"
-                  max="10000"
-                  step="100"
-                  value={settings.chunk_size}
-                  onChange={(e) => updateNumber('chunk_size', e.target.value)}
-                />
+                <div className="flex items-center gap-4">
+                  <Input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.05"
+                    value={settings.min_relevance_score}
+                    onChange={(e) => updateNumber('min_relevance_score', e.target.value, true)}
+                    className="flex-1"
+                  />
+                  <span className="text-sm font-mono w-12 text-right">
+                    {settings.min_relevance_score.toFixed(2)}
+                  </span>
+                </div>
                 <p className="text-xs text-muted-foreground mt-2">
-                  Maximum characters per document chunk
+                  Chunks with relevance score below this threshold will be filtered out (0 = no filtering)
                 </p>
               </CardContent>
             </Card>
 
+            {/* Row 3: Reranker settings */}
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm">Chunk Overlap</CardTitle>
+                <CardTitle className="text-sm">LLM Reranker</CardTitle>
               </CardHeader>
               <CardContent>
-                <Input
-                  type="number"
-                  min="0"
-                  max="2000"
-                  step="50"
-                  value={settings.chunk_overlap}
-                  onChange={(e) => updateNumber('chunk_overlap', e.target.value)}
-                />
-                <p className="text-xs text-muted-foreground mt-2">
-                  Overlap between consecutive chunks
-                </p>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label htmlFor="use-reranker">Enable Reranker</Label>
+                      <p className="text-xs text-muted-foreground">
+                        Use LLM to re-score and rerank retrieved chunks for better relevance
+                      </p>
+                    </div>
+                    <Switch
+                      id="use-reranker"
+                      checked={settings.use_reranker}
+                      onCheckedChange={(checked) => update('use_reranker', checked)}
+                    />
+                  </div>
+                  {settings.use_reranker && (
+                    <div>
+                      <Label className="text-xs text-muted-foreground mb-1 block">
+                        Initial K (candidates for reranking)
+                      </Label>
+                      <Input
+                        type="number"
+                        min="10"
+                        max="100"
+                        step="5"
+                        value={settings.reranker_initial_k}
+                        onChange={(e) => updateNumber('reranker_initial_k', e.target.value)}
+                      />
+                    </div>
+                  )}
+                </div>
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm">Retrieval Top K</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Input
-                  type="number"
-                  min="1"
-                  max="50"
-                  step="1"
-                  value={settings.retrieval_top_k}
-                  onChange={(e) => updateNumber('retrieval_top_k', e.target.value)}
-                />
-                <p className="text-xs text-muted-foreground mt-2">
-                  Number of chunks retrieved for context
-                </p>
-              </CardContent>
-            </Card>
+            {/* Row 4: Chunking strategy */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm">Chunking Strategy</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Select
+                    value={settings.chunking_strategy}
+                    onValueChange={(v) => update('chunking_strategy', v)}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select strategy" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="fixed">Fixed Size (default)</SelectItem>
+                      <SelectItem value="table_aware">Table Aware</SelectItem>
+                      <SelectItem value="semantic">Semantic</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    How documents are split into chunks during processing
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm">Semantic Chunk Threshold</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center gap-4">
+                    <Input
+                      type="range"
+                      min="0"
+                      max="1"
+                      step="0.05"
+                      value={settings.semantic_chunk_threshold}
+                      onChange={(e) => updateNumber('semantic_chunk_threshold', e.target.value, true)}
+                      className="flex-1"
+                      disabled={settings.chunking_strategy !== 'semantic'}
+                    />
+                    <span className="text-sm font-mono w-12 text-right">
+                      {settings.semantic_chunk_threshold.toFixed(2)}
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Similarity threshold for semantic chunking (only applies when strategy is &quot;semantic&quot;)
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         </TabsContent>
       </Tabs>

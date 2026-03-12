@@ -55,3 +55,8 @@ class SettingsResponse(BaseModel):
     chunk_size: int
     chunk_overlap: int
     retrieval_top_k: int
+    min_relevance_score: float
+    use_reranker: bool
+    reranker_initial_k: int
+    chunking_strategy: str
+    semantic_chunk_threshold: float

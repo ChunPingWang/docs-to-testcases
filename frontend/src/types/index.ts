@@ -82,6 +82,11 @@ export interface ModelSettings {
   chunk_size: number;
   chunk_overlap: number;
   retrieval_top_k: number;
+  min_relevance_score: number;
+  use_reranker: boolean;
+  reranker_initial_k: number;
+  chunking_strategy: string;
+  semantic_chunk_threshold: number;
 }
 
 export interface HealthStatus {

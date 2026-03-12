@@ -9,6 +9,7 @@ from app.core.document_parser import parse_document
 from app.core.chunking.base_chunker import chunk_by_sections, chunk_general
 from app.core.embedding.ollama_embedder import embed_texts
 from app.core.vectorstore.chroma_store import add_chunks, delete_document_chunks
+from app.core.runtime_settings import runtime_settings
 
 router = APIRouter()
 
@@ -18,9 +19,17 @@ async def _process_document(req: ProcessDocumentRequest) -> ProcessDocumentRespo
     # 1. Parse document
     parsed = parse_document(req.file_path, req.file_type)
 
-    # 2. Chunk
+    # 2. Chunk — choose strategy based on runtime_settings
     sections = parsed.get("sections", [])
-    if sections:
+    strategy = runtime_settings.chunking_strategy
+
+    if strategy == "table_aware" and sections:
+        from app.core.chunking.table_aware_chunker import chunk_table_aware
+        chunks = chunk_table_aware(sections)
+    elif strategy == "semantic" and sections:
+        from app.core.chunking.semantic_chunker import chunk_semantic
+        chunks = await chunk_semantic(sections)
+    elif sections:
         chunks = chunk_by_sections(sections)
     else:
         chunks = chunk_general(parsed["text"])
@@ -47,6 +56,7 @@ async def _process_document(req: ProcessDocumentRequest) -> ProcessDocumentRespo
             "section_title": c.get("section_title", ""),
             "heading_path": c.get("heading_path", ""),
             "page_number": c.get("page_number") or 0,
+            "is_table": c.get("is_table", False),
         }
         for c in chunks
     ]

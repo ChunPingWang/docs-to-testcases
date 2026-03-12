@@ -10,7 +10,15 @@ async def retrieve_context(
     document_id: str | None = None,
 ) -> list[dict]:
     """Retrieve relevant document chunks for a query using RAG."""
-    top_k = top_k or runtime_settings.retrieval_top_k
+    use_reranker = runtime_settings.use_reranker
+    min_score = runtime_settings.min_relevance_score
+
+    # If reranker is enabled, fetch more candidates for reranking
+    if use_reranker:
+        fetch_k = runtime_settings.reranker_initial_k
+    else:
+        fetch_k = top_k or runtime_settings.retrieval_top_k
+
     query_embedding = await embed_single(query)
 
     where = None
@@ -20,7 +28,7 @@ async def retrieve_context(
     results = query_chunks(
         project_id=project_id,
         query_embedding=query_embedding,
-        n_results=top_k,
+        n_results=fetch_k,
         where=where,
     )
 
@@ -37,6 +45,21 @@ async def retrieve_context(
 
     # Sort by relevance (highest first)
     chunks.sort(key=lambda c: c["relevance_score"], reverse=True)
+
+    # Filter by min_relevance_score
+    if min_score > 0:
+        chunks = [c for c in chunks if c["relevance_score"] >= min_score]
+
+    # Reranker stage
+    if use_reranker and chunks:
+        from app.core.rag.reranker import rerank_chunks
+
+        final_k = top_k or runtime_settings.retrieval_top_k
+        chunks = await rerank_chunks(query, chunks, top_k=final_k)
+    else:
+        # Trim to final top_k
+        final_k = top_k or runtime_settings.retrieval_top_k
+        chunks = chunks[:final_k]
 
     return chunks
 

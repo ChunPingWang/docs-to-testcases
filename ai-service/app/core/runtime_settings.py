@@ -26,6 +26,11 @@ class RuntimeSettings:
             "chunk_size": self.chunk_size,
             "chunk_overlap": self.chunk_overlap,
             "retrieval_top_k": self.retrieval_top_k,
+            "min_relevance_score": self.min_relevance_score,
+            "use_reranker": self.use_reranker,
+            "reranker_initial_k": self.reranker_initial_k,
+            "chunking_strategy": self.chunking_strategy,
+            "semantic_chunk_threshold": self.semantic_chunk_threshold,
         }
 
     def update(self, data: dict) -> dict:
@@ -57,6 +62,11 @@ class RuntimeSettings:
         self.chunk_size: int = _static.chunk_size
         self.chunk_overlap: int = _static.chunk_overlap
         self.retrieval_top_k: int = _static.retrieval_top_k
+        self.min_relevance_score: float = 0.3
+        self.use_reranker: bool = False
+        self.reranker_initial_k: int = 30
+        self.chunking_strategy: str = "fixed"  # "fixed" | "table_aware" | "semantic"
+        self.semantic_chunk_threshold: float = 0.5
 
 
 runtime_settings = RuntimeSettings()

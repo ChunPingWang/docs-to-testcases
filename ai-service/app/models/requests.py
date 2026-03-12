@@ -54,3 +54,8 @@ class UpdateSettingsRequest(BaseModel):
     chunk_size: int | None = None
     chunk_overlap: int | None = None
     retrieval_top_k: int | None = None
+    min_relevance_score: float | None = None
+    use_reranker: bool | None = None
+    reranker_initial_k: int | None = None
+    chunking_strategy: str | None = None
+    semantic_chunk_threshold: float | None = None
