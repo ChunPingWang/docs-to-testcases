@@ -2,10 +2,10 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    llm_api_base_url: str = "https://api.minimax.io/v1"
+    llm_api_base_url: str = "https://generativelanguage.googleapis.com/v1beta/openai"
     llm_api_key: str = ""
-    llm_model: str = "MiniMax-M2.5"
-    embedding_model: str = "embo-01"
+    llm_model: str = "gemini-2.5-flash"
+    embedding_model: str = "gemini-embedding-001"
 
     chroma_host: str = "chromadb"
     chroma_port: int = 8000

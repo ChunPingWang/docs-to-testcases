@@ -108,5 +108,5 @@ async def chat(
             json=payload,
         )
         resp.raise_for_status()
-        content = resp.json()["choices"][0]["message"]["content"]
-        return _strip_think(content)
+        content = resp.json()["choices"][0]["message"].get("content", "")
+        return _strip_think(content) if content else ""

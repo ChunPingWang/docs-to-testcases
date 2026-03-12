@@ -110,12 +110,15 @@ export default function DocumentsPage() {
         {documents.map((doc) => (
           <Card key={doc.id}>
             <CardContent className="flex items-center justify-between py-4">
-              <div>
+              <div className="min-w-0 flex-1">
                 <p className="font-medium">{doc.originalName}</p>
                 <p className="text-sm text-muted-foreground">
                   {doc.fileType.toUpperCase()} &middot; {formatSize(doc.fileSize)}
                   {doc.chunkCount > 0 && ` \u00b7 ${doc.chunkCount} chunks`}
                 </p>
+                {doc.status === 'error' && doc.errorMessage && (
+                  <p className="text-sm text-red-600 mt-1">{doc.errorMessage}</p>
+                )}
               </div>
               <div className="flex items-center gap-3">
                 <Badge className={statusColors[doc.status] || ''}>
