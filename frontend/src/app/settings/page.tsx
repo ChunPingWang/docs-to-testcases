@@ -424,7 +424,7 @@ export default function SettingsPage() {
                 <CardContent>
                   <Select
                     value={settings.chunking_strategy}
-                    onValueChange={(v) => update('chunking_strategy', v)}
+                    onValueChange={(v) => v && update('chunking_strategy', v)}
                   >
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="Select strategy" />
