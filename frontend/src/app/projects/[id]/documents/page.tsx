@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useParams } from 'next/navigation';
+import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -75,7 +76,15 @@ export default function DocumentsPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6">Documents</h1>
+      <div className="flex items-center gap-4 mb-6">
+        <Link
+          href={`/projects/${projectId}`}
+          className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+        >
+          ← 返回專案
+        </Link>
+        <h1 className="text-2xl font-bold">Documents</h1>
+      </div>
 
       {/* Upload Dropzone */}
       <div

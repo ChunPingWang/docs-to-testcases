@@ -37,8 +37,10 @@ export class DocumentsService {
     const docDir = path.join(uploadDir, projectId);
     fs.mkdirSync(docDir, { recursive: true });
 
-    const ext = path.extname(file.originalname).toLowerCase().slice(1);
-    const filename = `${Date.now()}-${file.originalname}`;
+    // Multer (busboy) decodes filenames as latin1 by default; re-decode as UTF-8
+    const originalName = Buffer.from(file.originalname, 'latin1').toString('utf8');
+    const ext = path.extname(originalName).toLowerCase().slice(1);
+    const filename = `${Date.now()}-${originalName}`;
     const filePath = path.join(docDir, filename);
 
     fs.writeFileSync(filePath, file.buffer);
@@ -46,7 +48,7 @@ export class DocumentsService {
     const doc = this.repo.create({
       projectId,
       filename,
-      originalName: file.originalname,
+      originalName,
       filePath,
       fileType: ext,
       fileSize: file.size,
