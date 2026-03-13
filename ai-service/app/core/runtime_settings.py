@@ -4,15 +4,53 @@ from app.config import settings as _static
 
 
 class RuntimeSettings:
-    """Singleton holding runtime-adjustable parameters."""
+    """Singleton holding runtime-adjustable parameters.
+
+    Model-related fields (llm_model, embedding_model) now resolve through the
+    provider registry so that switching providers automatically changes models.
+    Callers may still *override* them per-request via the existing API.
+    """
 
     def __init__(self):
         self.reset()
 
+    # ── Resolved model helpers (provider-aware) ────────────
+
+    @property
+    def llm_model(self) -> str:
+        if self._llm_model_override:
+            return self._llm_model_override
+        from app.core.llm.provider_registry import provider_registry
+        return provider_registry.active_llm_model or _static.llm_model
+
+    @llm_model.setter
+    def llm_model(self, value: str):
+        self._llm_model_override = value
+
+    @property
+    def embedding_model(self) -> str:
+        if self._embedding_model_override:
+            return self._embedding_model_override
+        from app.core.llm.provider_registry import provider_registry
+        return provider_registry.active_embedding_model or _static.embedding_model
+
+    @embedding_model.setter
+    def embedding_model(self, value: str):
+        self._embedding_model_override = value
+
+    @property
+    def optimization_mode(self) -> str:
+        """Current optimization strategy derived from the active provider."""
+        from app.core.llm.provider_registry import provider_registry
+        return provider_registry.active_optimization_mode
+
     # ── Query / Mutate ────────────────────────────────────
 
     def to_dict(self) -> dict:
+        from app.core.llm.provider_registry import provider_registry
         return {
+            "active_provider": provider_registry.active_name,
+            "optimization_mode": self.optimization_mode,
             "llm_model": self.llm_model,
             "embedding_model": self.embedding_model,
             "temperature_qa": self.temperature_qa,
@@ -36,15 +74,20 @@ class RuntimeSettings:
     def update(self, data: dict) -> dict:
         """Partial update — only keys present in *data* are changed."""
         valid_keys = set(self.to_dict().keys())
+        # These two are read-only / derived
+        readonly = {"active_provider", "optimization_mode"}
         for key, value in data.items():
+            if key in readonly:
+                continue
             if key in valid_keys and value is not None:
                 setattr(self, key, value)
         return self.to_dict()
 
     def reset(self):
         """Reset every field to its default (from env / config.py)."""
-        self.llm_model: str = _static.llm_model  # e.g. MiniMax-M2.5
-        self.embedding_model: str = _static.embedding_model  # e.g. embo-01
+        # Model overrides (empty string = use provider default)
+        self._llm_model_override: str = ""
+        self._embedding_model_override: str = ""
 
         # Temperature defaults per operation type
         self.temperature_qa: float = 0.7

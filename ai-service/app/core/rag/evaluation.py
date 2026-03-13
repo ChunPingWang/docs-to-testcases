@@ -32,11 +32,16 @@ class EvalSample:
 
 
 def _build_llm():
-    """Build a LangChain ChatOpenAI pointing at the MiniMax API."""
+    """Build a LangChain ChatOpenAI pointing at the active provider."""
+    from app.core.llm.provider_registry import provider_registry
+    provider = provider_registry.get_active()
+    base_url = provider.base_url if provider else settings.llm_api_base_url
+    api_key = provider.api_key if provider else settings.llm_api_key
+
     return ChatOpenAI(
         model=runtime_settings.llm_model,
-        openai_api_key=settings.llm_api_key,
-        openai_api_base=settings.llm_api_base_url,
+        openai_api_key=api_key,
+        openai_api_base=base_url,
         temperature=0.0,
         max_tokens=2048,
     )

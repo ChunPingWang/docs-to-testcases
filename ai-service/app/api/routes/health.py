@@ -3,6 +3,7 @@ import httpx
 
 from app.config import settings
 from app.core.runtime_settings import runtime_settings
+from app.core.llm.provider_registry import provider_registry
 from app.models.responses import HealthResponse
 
 router = APIRouter()
@@ -14,13 +15,17 @@ async def health_check():
     models_available = []
     chroma_connected = False
 
-    # Check LLM API connectivity with a minimal request
+    # Check LLM API connectivity via active provider
+    provider = provider_registry.get_active()
+    base_url = provider.base_url if provider else settings.llm_api_base_url
+    api_key = provider.api_key if provider else settings.llm_api_key
+
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
             resp = await client.post(
-                f"{settings.llm_api_base_url}/chat/completions",
+                f"{base_url}/chat/completions",
                 headers={
-                    "Authorization": f"Bearer {settings.llm_api_key}",
+                    "Authorization": f"Bearer {api_key}",
                     "Content-Type": "application/json",
                 },
                 json={

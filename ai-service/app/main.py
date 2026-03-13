@@ -1,7 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.routes import documents, qa, generation, finetune, health, settings, evaluation
+from app.api.routes import documents, qa, generation, finetune, health, settings, evaluation, providers
+from app.config import init_provider_registry
 
 app = FastAPI(
     title="Docs-to-TestCases AI Service",
@@ -25,3 +26,7 @@ app.include_router(generation.router, prefix="/ai/generate", tags=["generation"]
 app.include_router(finetune.router, prefix="/ai/finetune", tags=["finetune"])
 app.include_router(settings.router, prefix="/ai/settings", tags=["settings"])
 app.include_router(evaluation.router, prefix="/ai/eval", tags=["evaluation"])
+app.include_router(providers.router, prefix="/ai/providers", tags=["providers"])
+
+# Initialize provider registry from env config
+init_provider_registry()

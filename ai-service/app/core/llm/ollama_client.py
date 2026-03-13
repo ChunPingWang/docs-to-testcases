@@ -1,10 +1,15 @@
+"""OpenAI-compatible LLM client — provider-aware.
+
+Resolves base_url, api_key, and model from the active provider in the
+provider registry.  All existing call-sites continue to work unchanged.
+"""
+
 import json
 import re
 from collections.abc import AsyncGenerator
 
 import httpx
 
-from app.config import settings
 from app.core.runtime_settings import runtime_settings
 
 _THINK_RE = re.compile(r"<think>.*?</think>\s*", re.DOTALL)
@@ -15,11 +20,31 @@ def _strip_think(text: str) -> str:
     return _THINK_RE.sub("", text).strip()
 
 
+def _resolve_provider():
+    """Return (base_url, api_key, extra_headers) from active provider."""
+    from app.core.llm.provider_registry import provider_registry
+    p = provider_registry.get_active()
+    if p:
+        return p.base_url, p.api_key, p.extra_headers
+    # Fallback to static config
+    from app.config import settings
+    return settings.llm_api_base_url, settings.llm_api_key, {}
+
+
 def _headers() -> dict:
-    return {
+    _, api_key, extra = _resolve_provider()
+    h = {
         "Content-Type": "application/json",
-        "Authorization": f"Bearer {settings.llm_api_key}",
+        "Authorization": f"Bearer {api_key}",
     }
+    if extra:
+        h.update(extra)
+    return h
+
+
+def _base_url() -> str:
+    url, _, _ = _resolve_provider()
+    return url
 
 
 async def generate(
@@ -66,7 +91,7 @@ async def generate_stream(
     async with httpx.AsyncClient(timeout=300.0) as client:
         async with client.stream(
             "POST",
-            f"{settings.llm_api_base_url}/chat/completions",
+            f"{_base_url()}/chat/completions",
             headers=_headers(),
             json=payload,
         ) as resp:
@@ -103,7 +128,7 @@ async def chat(
 
     async with httpx.AsyncClient(timeout=300.0) as client:
         resp = await client.post(
-            f"{settings.llm_api_base_url}/chat/completions",
+            f"{_base_url()}/chat/completions",
             headers=_headers(),
             json=payload,
         )

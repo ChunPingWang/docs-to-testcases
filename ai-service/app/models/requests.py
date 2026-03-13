@@ -59,3 +59,32 @@ class UpdateSettingsRequest(BaseModel):
     reranker_initial_k: int | None = None
     chunking_strategy: str | None = None
     semantic_chunk_threshold: float | None = None
+
+
+# ── Provider management ─────────────────────────────────
+
+class RegisterProviderRequest(BaseModel):
+    name: str
+    base_url: str
+    api_key: str = ""
+    llm_model: str = ""
+    embedding_model: str = ""
+    supports_streaming: bool = True
+    supports_finetune: bool = False
+    supports_embedding: bool = True
+    optimization_mode: str = "rag"  # rag | rag_finetune | rag_fewshot | prompt_only
+
+
+class UpdateProviderRequest(BaseModel):
+    base_url: str | None = None
+    api_key: str | None = None
+    llm_model: str | None = None
+    embedding_model: str | None = None
+    supports_streaming: bool | None = None
+    supports_finetune: bool | None = None
+    supports_embedding: bool | None = None
+    optimization_mode: str | None = None
+
+
+class SwitchProviderRequest(BaseModel):
+    name: str

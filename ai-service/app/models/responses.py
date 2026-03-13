@@ -42,6 +42,8 @@ class HealthResponse(BaseModel):
 
 
 class SettingsResponse(BaseModel):
+    active_provider: str
+    optimization_mode: str
     llm_model: str
     embedding_model: str
     temperature_qa: float
@@ -60,3 +62,20 @@ class SettingsResponse(BaseModel):
     reranker_initial_k: int
     chunking_strategy: str
     semantic_chunk_threshold: float
+
+
+class ProviderResponse(BaseModel):
+    name: str
+    base_url: str
+    api_key_set: bool
+    llm_model: str
+    embedding_model: str
+    supports_streaming: bool
+    supports_finetune: bool
+    supports_embedding: bool
+    optimization_mode: str
+
+
+class ProviderListResponse(BaseModel):
+    active_provider: str
+    providers: list[ProviderResponse]
