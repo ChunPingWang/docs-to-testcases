@@ -435,3 +435,302 @@ A:
 2. 使用更激進的量化（Q4_K_M → Q4_0）
 3. 確認 `num_thread` 設定為 CPU 核心數 - 2
 4. 批次處理：非互動場景使用批次 API 呼叫
+
+---
+
+## 多 Provider 設定範例
+
+本系統支援同時設定多個模型 Provider，每個 Provider 可獨立設定模型、API 金鑰、以及最佳化策略。有兩種設定方式：
+
+### 方式一：環境變數（啟動時載入）
+
+在 `.env` 檔案中設定，系統啟動時自動註冊。
+
+#### 範例 A：僅使用 Gemini（預設）
+
+```bash
+# .env
+LLM_API_BASE_URL=https://generativelanguage.googleapis.com/v1beta/openai
+LLM_API_KEY=AIzaSy_your_gemini_api_key_here
+LLM_MODEL=gemini-2.5-flash
+EMBEDDING_MODEL=gemini-embedding-001
+
+# 其他 Provider 關閉
+OLLAMA_ENABLED=false
+OPENAI_ENABLED=false
+```
+
+> Gemini 的 optimization_mode 預設為 `rag`（純 RAG，無需微調）。
+
+#### 範例 B：僅使用 OpenAI
+
+```bash
+# .env — 把 primary provider 指向 OpenAI
+LLM_API_BASE_URL=https://api.openai.com/v1
+LLM_API_KEY=sk-proj-your_openai_api_key_here
+LLM_MODEL=gpt-4o
+EMBEDDING_MODEL=text-embedding-3-small
+
+OLLAMA_ENABLED=false
+OPENAI_ENABLED=false
+# 注意：因為 primary provider 已經是 OpenAI，不需要額外啟用
+```
+
+#### 範例 C：Gemini + Ollama 雙 Provider（推薦地端混合部署）
+
+```bash
+# .env — Gemini 作為主 Provider，Ollama 作為地端 Provider
+LLM_API_BASE_URL=https://generativelanguage.googleapis.com/v1beta/openai
+LLM_API_KEY=AIzaSy_your_gemini_api_key_here
+LLM_MODEL=gemini-2.5-flash
+EMBEDDING_MODEL=gemini-embedding-001
+
+# 啟用 Ollama（在 GMK EVO 上執行）
+OLLAMA_ENABLED=true
+OLLAMA_API_BASE_URL=http://192.168.1.100:11434/v1   # GMK EVO 的 IP
+OLLAMA_API_KEY=ollama
+OLLAMA_LLM_MODEL=qwen2.5:32b-instruct-q4_K_M
+OLLAMA_EMBEDDING_MODEL=bge-m3
+OLLAMA_OPTIMIZATION_MODE=rag_finetune               # 支援 LoRA 微調
+
+OPENAI_ENABLED=false
+```
+
+> 啟動後系統預設使用 Gemini。要切換到 Ollama：
+> ```bash
+> curl -X POST http://localhost:8000/ai/providers/switch \
+>   -H "Content-Type: application/json" \
+>   -d '{"name": "ollama"}'
+> ```
+
+#### 範例 D：三 Provider 全開（Gemini + OpenAI + Ollama）
+
+```bash
+# .env
+LLM_API_BASE_URL=https://generativelanguage.googleapis.com/v1beta/openai
+LLM_API_KEY=AIzaSy_your_gemini_api_key_here
+LLM_MODEL=gemini-2.5-flash
+EMBEDDING_MODEL=gemini-embedding-001
+
+OLLAMA_ENABLED=true
+OLLAMA_API_BASE_URL=http://192.168.1.100:11434/v1
+OLLAMA_API_KEY=ollama
+OLLAMA_LLM_MODEL=qwen2.5:32b-instruct-q4_K_M
+OLLAMA_EMBEDDING_MODEL=bge-m3
+OLLAMA_OPTIMIZATION_MODE=rag_finetune
+
+OPENAI_ENABLED=true
+OPENAI_API_BASE_URL=https://api.openai.com/v1
+OPENAI_API_KEY=sk-proj-your_openai_api_key_here
+OPENAI_LLM_MODEL=gpt-4o
+OPENAI_EMBEDDING_MODEL=text-embedding-3-small
+OPENAI_OPTIMIZATION_MODE=rag
+```
+
+---
+
+### 方式二：API 動態註冊（運行時即時新增）
+
+透過 REST API 在系統**運行中**動態新增 Provider，無需重啟。
+
+#### 範例 A：動態註冊 Gemini
+
+```bash
+curl -X POST http://localhost:8000/ai/providers \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "gemini",
+    "base_url": "https://generativelanguage.googleapis.com/v1beta/openai",
+    "api_key": "AIzaSy_your_gemini_api_key_here",
+    "llm_model": "gemini-2.5-flash",
+    "embedding_model": "gemini-embedding-001",
+    "supports_finetune": false,
+    "optimization_mode": "rag"
+  }'
+```
+
+#### 範例 B：動態註冊 OpenAI
+
+```bash
+curl -X POST http://localhost:8000/ai/providers \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "openai",
+    "base_url": "https://api.openai.com/v1",
+    "api_key": "sk-proj-your_openai_api_key_here",
+    "llm_model": "gpt-4o",
+    "embedding_model": "text-embedding-3-small",
+    "supports_finetune": true,
+    "optimization_mode": "rag"
+  }'
+```
+
+#### 範例 C：動態註冊 Ollama（地端）
+
+```bash
+curl -X POST http://localhost:8000/ai/providers \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "ollama-local",
+    "base_url": "http://192.168.1.100:11434/v1",
+    "api_key": "ollama",
+    "llm_model": "qwen2.5:32b-instruct-q4_K_M",
+    "embedding_model": "bge-m3",
+    "supports_finetune": true,
+    "optimization_mode": "rag_finetune"
+  }'
+```
+
+#### 範例 D：動態註冊 GPT-OSS-120B（開源大模型私有部署）
+
+假設你在自己的伺服器上透過 vLLM 或 SGLang 部署了 GPT-OSS-120B 等大型開源模型：
+
+```bash
+curl -X POST http://localhost:8000/ai/providers \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "gpt-oss-120b",
+    "base_url": "http://gpu-server.internal:8080/v1",
+    "api_key": "your-vllm-token",
+    "llm_model": "gpt-oss-120b",
+    "embedding_model": "bge-m3",
+    "supports_streaming": true,
+    "supports_finetune": true,
+    "supports_embedding": false,
+    "optimization_mode": "rag_fewshot"
+  }'
+```
+
+> **說明**：
+> - `supports_embedding: false` → 因為 GPT-OSS-120B 是純 LLM，不提供 embedding API。系統會自動用當前 active provider 的 embedding 模型。
+> - `optimization_mode: "rag_fewshot"` → 會將 `/ai/finetune/prepare` 產生的訓練資料自動寫入 ChromaDB，作為 few-shot 範例在生成時動態注入。
+
+---
+
+### 切換 Provider
+
+```bash
+# 切換到 OpenAI
+curl -X POST http://localhost:8000/ai/providers/switch \
+  -H "Content-Type: application/json" \
+  -d '{"name": "openai"}'
+
+# 切換到地端 Ollama
+curl -X POST http://localhost:8000/ai/providers/switch \
+  -H "Content-Type: application/json" \
+  -d '{"name": "ollama-local"}'
+
+# 切換到 GPT-OSS-120B
+curl -X POST http://localhost:8000/ai/providers/switch \
+  -H "Content-Type: application/json" \
+  -d '{"name": "gpt-oss-120b"}'
+```
+
+切換後可確認當前狀態：
+
+```bash
+# 查看所有 Provider 和當前啟用的
+curl http://localhost:8000/ai/providers | python -m json.tool
+```
+
+回應範例：
+
+```json
+{
+  "active_provider": "gpt-oss-120b",
+  "providers": [
+    {
+      "name": "gemini",
+      "base_url": "https://generativelanguage.googleapis.com/v1beta/openai",
+      "api_key_set": true,
+      "llm_model": "gemini-2.5-flash",
+      "embedding_model": "gemini-embedding-001",
+      "supports_streaming": true,
+      "supports_finetune": false,
+      "supports_embedding": true,
+      "optimization_mode": "rag"
+    },
+    {
+      "name": "ollama-local",
+      "base_url": "http://192.168.1.100:11434/v1",
+      "api_key_set": true,
+      "llm_model": "qwen2.5:32b-instruct-q4_K_M",
+      "embedding_model": "bge-m3",
+      "supports_streaming": true,
+      "supports_finetune": true,
+      "supports_embedding": true,
+      "optimization_mode": "rag_finetune"
+    },
+    {
+      "name": "gpt-oss-120b",
+      "base_url": "http://gpu-server.internal:8080/v1",
+      "api_key_set": true,
+      "llm_model": "gpt-oss-120b",
+      "embedding_model": "bge-m3",
+      "supports_streaming": true,
+      "supports_finetune": true,
+      "supports_embedding": false,
+      "optimization_mode": "rag_fewshot"
+    }
+  ]
+}
+```
+
+---
+
+### 動態更新 Provider 設定
+
+不需刪除重建，可直接更新部分欄位：
+
+```bash
+# 把 Ollama 的模型換成 72B 版本
+curl -X PUT http://localhost:8000/ai/providers/ollama-local \
+  -H "Content-Type: application/json" \
+  -d '{
+    "llm_model": "qwen2.5:72b-instruct-q4_K_M",
+    "optimization_mode": "prompt_only"
+  }'
+
+# 更新 OpenAI 的 API Key
+curl -X PUT http://localhost:8000/ai/providers/openai \
+  -H "Content-Type: application/json" \
+  -d '{"api_key": "sk-proj-new_key_here"}'
+```
+
+---
+
+### Optimization Mode 對照表
+
+| Mode | 適用場景 | `/ai/finetune/start` 行為 |
+|------|---------|--------------------------|
+| `rag` | 雲端 API（Gemini, OpenAI） | 回傳提示訊息，不做額外操作。品質靠 RAG 檢索 |
+| `rag_finetune` | 地端 Ollama（有 GPU 或大量 RAM） | 產生 Modelfile + LoRA adapter 佔位，搭配 `train.jsonl` |
+| `rag_fewshot` | 任何 Provider | 將 `train.jsonl` 寫入 ChromaDB，生成時動態檢索 few-shot 範例 |
+| `prompt_only` | 地端 Ollama（無 GPU，純 CPU） | 產生 Modelfile，用豐富的 system prompt 注入領域知識 |
+
+### 建議的使用策略
+
+```
+┌─────────────────────────────────────────────────────────┐
+│           選擇 Optimization Mode 決策樹                   │
+├─────────────────────────────────────────────────────────┤
+│                                                         │
+│  Q: 使用的是雲端 API（Gemini / OpenAI）嗎？              │
+│  ├── 是 → optimization_mode = "rag"                     │
+│  │        雲端模型已夠聰明，RAG 檢索就夠了                 │
+│  │                                                      │
+│  └── 否 → 是地端 Ollama                                 │
+│       │                                                 │
+│       Q: 是否有 GPU 或足夠 RAM 做 LoRA？                 │
+│       ├── 是 → optimization_mode = "rag_finetune"       │
+│       │        最佳品質，但需要訓練時間                     │
+│       │                                                 │
+│       └── 否 → 先試 "prompt_only"                       │
+│            │   快速驗證效果                               │
+│            │                                            │
+│            Q: 效果不理想？                                │
+│            └── 改用 "rag_fewshot"                        │
+│                 從歷史範例學習，不需要訓練                  │
+│                                                         │
+└─────────────────────────────────────────────────────────┘
+```
