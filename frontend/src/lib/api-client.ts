@@ -22,9 +22,7 @@ export const getDocumentStatus = (id: string) =>
 export const uploadDocuments = (projectId: string, files: File[]) => {
   const formData = new FormData();
   files.forEach((f) => formData.append('files', f));
-  return api.post(`/projects/${projectId}/documents`, formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-  }).then((r) => r.data);
+  return api.post(`/projects/${projectId}/documents`, formData).then((r) => r.data);
 };
 export const deleteDocument = (id: string) => api.delete(`/documents/${id}`);
 
